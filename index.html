@@ -162,7 +162,7 @@
       const p2 = products.find(x => x.No === no2);
       if (!p1 || !p2) return;
       compareBody.innerHTML = '';
-      Object.keys(p1).forEach(key => {
+      Object.keys(p1).filter(key => key !== 'No').forEach(key => {
         const val1 = p1[key];
         const val2 = p2[key];
         let diff = '';
