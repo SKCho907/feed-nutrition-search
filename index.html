@@ -147,7 +147,7 @@
       const p = products.find(x => x.No === no);
       if (!p) return;
       singleBody.innerHTML = '';
-      Object.keys(p).forEach(key => {
+      Object.keys(p).filter(key => !['No','제품명','축종'].includes(key)).forEach(key => {
         if (['No','제품명','축종'].includes(key)) return;
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${key}</td><td>${p[key]}</td>`;
