@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사료 제품 영양성분 검색</title>
+  <style>
+    body { font-family: sans-serif; padding: 16px; margin: 0; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .controls label { flex: 1 1 auto; min-width: 100px; }
+    .controls select { flex: 2 1 150px; padding: 8px; font-size: 1rem; }
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: center; font-size: 0.9rem; }
+    th { background-color: #f4f4f4; }
+    .hidden { display: none; }
+    @media (max-width: 480px) {
+      body { padding: 8px; }
+      .controls { flex-direction: column; }
+      .controls label { min-width: auto; }
+      .controls select { width: 100%; }
+      th, td { padding: 6px; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1 style="font-size:1.5rem; margin-bottom:16px;">사료 제품 영양성분 검색</h1>
+  <div class="controls">
+    <label for="speciesSelect">축종:
+      <select id="speciesSelect">
+        <option value="">-- 축종 선택 --</option>
+        <option value="낙농">낙농</option>
+        <option value="비육">비육</option>
+      </select>
+    </label>
+    <label for="productSelect">제품명:
+      <select id="productSelect" disabled>
+        <option value="">-- 축종을 먼저 선택하세요 --</option>
+      </select>
+    </label>
+  </div>
+  <div class="table-container">
+    <table id="resultTable" class="hidden">
+      <thead>
+        <tr>
+          <th>No.</th><th>제품명</th><th>축종</th><th>조단백질(%)</th><th>TDN/Vit.A</th><th>조지방(%)</th><th>칼슘(%)</th><th>인(%)</th><th>조섬유(%)</th><th>조회분(%)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script>
+    const products = [
+      {no:1,name:'IGY대용유',species:'낙농',protein:22.0,tdn:'(40,000)',fat:10.0,ca:0.6,p:0.9,cf:3.0,ash:10.0},
+      {no:2,name:'더셀렉트밀크',species:'낙농',protein:22.0,tdn:'(40,000)',fat:20.0,ca:0.4,p:0.9,cf:1.0,ash:10.0},
+      {no:3,name:'더셀렉트카프',species:'낙농',protein:20.0,tdn:72.0,fat:2.0,ca:0.8,p:0.8,cf:15.0,ash:12.0},
+      {no:4,name:'뉴젠카프',species:'낙농',protein:16.0,tdn:70.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:5,name:'뉴젠카프골드',species:'낙농',protein:18.0,tdn:71.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:6,name:'뉴젠중송아지',species:'낙농',protein:17.0,tdn:69.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:7,name:'뉴젠큰송아지',species:'낙농',protein:13.5,tdn:68.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:8,name:'뉴젠초임우',species:'낙농',protein:14.5,tdn:70.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:9,name:'헬스핏블루',species:'낙농',protein:20.0,tdn:75.0,fat:2.5,ca:0.8,p:1.0,cf:15.0,ash:12.0},
+      {no:10,name:'LTF드레싱',species:'낙농',protein:17.0,tdn:88.0,fat:10.0,ca:1.0,p:1.0,cf:10.0,ash:10.0},
+      {no:11,name:'헬스드레싱',species:'낙농',protein:13.5,tdn:85.0,fat:5.0,ca:0.1,p:1.0,cf:10.0,ash:8.0},
+      {no:12,name:'헬스핏1%',species:'낙농',protein:22.5,tdn:78.0,fat:2.5,ca:0.8,p:1.0,cf:15.0,ash:12.0},
+      {no:13,name:'헬스핏화이트',species:'낙농',protein:21.0,tdn:76.0,fat:2.5,ca:0.8,p:1.0,cf:15.0,ash:12.0},
+      {no:14,name:'그린무지개베이스',species:'낙농',protein:20.5,tdn:75.0,fat:3.0,ca:0.8,p:1.2,cf:12.0,ash:10.0},
+      {no:15,name:'헬스핏오토',species:'낙농',protein:20.0,tdn:80.0,fat:2.5,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:16,name:'골든팻',species:'낙농',protein:19.5,tdn:75.0,fat:5.0,ca:0.9,p:1.0,cf:15.0,ash:12.0},
+      {no:17,name:'헬스핏그린',species:'낙농',protein:19.0,tdn:73.0,fat:2.5,ca:0.8,p:1.0,cf:15.0,ash:12.0},
+      {no:18,name:'PCR',species:'낙농',protein:17.0,tdn:70.0,fat:2.0,ca:0.3,p:1.0,cf:15.0,ash:12.0},
+      {no:19,name:'올투1T',species:'낙농',protein:20.0,tdn:76.0,fat:2.5,ca:0.8,p:1.0,cf:20.0,ash:12.0},
+      {no:20,name:'올투2T',species:'낙농',protein:20.0,tdn:76.0,fat:2.5,ca:0.8,p:1.0,cf:20.0,ash:12.0},
+      {no:21,name:'그린원',species:'낙농',protein:17.0,tdn:75.0,fat:2.5,ca:0.8,p:1.0,cf:20.0,ash:12.0},
+      {no:22,name:'프라임스타터',species:'비육',protein:16.0,tdn:68.0,fat:2.5,ca:0.8,p:1.0,cf:15.0,ash:12.0},
+      {no:23,name:'프로젝트원',species:'비육',protein:23.0,tdn:75.0,fat:2.5,ca:0.7,p:1.0,cf:12.0,ash:10.0},
+      {no:24,name:'프라임골드송아지',species:'비육',protein:20.0,tdn:72.0,fat:2.0,ca:0.85,p:0.8,cf:15.0,ash:12.0},
+      {no:25,name:'프라임육성',species:'비육',protein:15.5,tdn:71.0,fat:2.5,ca:0.8,p:1.0,cf:15.0,ash:12.0},
+      {no:26,name:'스카이육성',species:'비육',protein:14.0,tdn:70.0,fat:2.5,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:27,name:'헬스육성',species:'비육',protein:15.0,tdn:70.0,fat:2.5,ca:1.0,p:1.0,cf:12.0,ash:12.0},
+      {no:28,name:'영주육성비육',species:'비육',protein:15.0,tdn:70.0,fat:2.5,ca:0.7,p:1.2,cf:20.0,ash:12.0},
+      {no:29,name:'무지개이코노비육',species:'비육',protein:11.0,tdn:73.5,fat:2.5,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:30,name:'프라임전기',species:'비육',protein:14.0,tdn:73.0,fat:2.5,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:31,name:'영주큰소전기',species:'비육',protein:14.5,tdn:73.0,fat:2.5,ca:0.7,p:1.2,cf:20.0,ash:12.0},
+      {no:32,name:'스카이비육',species:'비육',protein:12.0,tdn:72.0,fat:2.5,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:33,name:'나이스퀸',species:'비육',protein:12.0,tdn:73.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:34,name:'프라임비육',species:'비육',protein:13.0,tdn:73.0,fat:2.5,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:35,name:'우리큰소비육1',species:'비육',protein:11.5,tdn:71.5,fat:3.0,ca:0.6,p:1.2,cf:15.0,ash:10.0},
+      {no:36,name:'프라임마블',species:'비육',protein:13.0,tdn:76.0,fat:2.0,ca:0.6,p:1.0,cf:15.0,ash:12.0},
+      {no:37,name:'프라임완성',species:'비육',protein:13.0,tdn:74.0,fat:3.0,ca:0.6,p:1.0,cf:15.0,ash:12.0},
+      {no:38,name:'영주큰소후기',species:'비육',protein:14.0,tdn:76.0,fat:3.0,ca:0.6,p:0.8,cf:15.0,ash:12.0},
+      {no:39,name:'스카이맥',species:'비육',protein:13.0,tdn:75.0,fat:2.0,ca:0.7,p:1.2,cf:14.0,ash:12.0},
+      {no:40,name:'세이브맥',species:'비육',protein:12.0,tdn:74.0,fat:2.0,ca:0.7,p:1.0,cf:14.0,ash:12.0},
+      {no:41,name:'보리드레싱',species:'비육',protein:10.0,tdn:80.0,fat:3.0,ca:0.25,p:1.5,cf:10.0,ash:10.0},
+      {no:42,name:'프라임스페셜',species:'비육',protein:11.5,tdn:74.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:43,name:'헬스비육',species:'비육',protein:12.0,tdn:70.0,fat:2.5,ca:1.0,p:1.0,cf:12.0,ash:12.0},
+      {no:44,name:'우리큰소비육2',species:'비육',protein:11.5,tdn:73.5,fat:3.0,ca:0.6,p:1.2,cf:15.0,ash:10.0},
+      {no:45,name:'무지개이코노번식',species:'비육',protein:11.0,tdn:68.0,fat:2.0,ca:1.0,p:1.0,cf:12.0,ash:12.0},
+      {no:46,name:'영주한우번식우',species:'비육',protein:11.5,tdn:72.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:47,name:'프라임번식우',species:'비육',protein:14.5,tdn:70.0,fat:2.0,ca:0.8,p:1.0,cf:12.0,ash:10.0},
+      {no:48,name:'스카이번식우',species:'비육',protein:12.0,tdn:68.0,fat:2.0,ca:1.0,p:1.0,cf:12.0,ash:12.0},
+      {no:49,name:'우리임신우',species:'비육',protein:13.0,tdn:70.0,fat:1.5,ca:0.7,p:1.3,cf:20.0,ash:12.0},
+      {no:50,name:'스카이완성',species:'비육',protein:11.5,tdn:74.0,fat:2.0,ca:0.7,p:1.0,cf:15.0,ash:12.0},
+      {no:51,name:'헬스원',species:'낙농',protein:20.0,tdn:75.0,fat:2.5,ca:0.8,p:1.0,cf:15.0,ash:12.0},
+      {no:52,name:'헬스핏블루S',species:'낙농',protein:20.0,tdn:75.0,fat:2.5,ca:0.8,p:1.0,cf:15.0,ash:12.0}
+    ];
+    const speciesSelect = document.getElementById('speciesSelect');
+    const productSelect = document.getElementById('productSelect');
+    const resultTable = document.getElementById('resultTable');
+    const tbody = resultTable.querySelector('tbody');
+
+    speciesSelect.addEventListener('change', () => {
+      const sel = speciesSelect.value;
+      const list = sel ? products.filter(p => p.species === sel) : [];
+      list.sort((a,b) => a.name.localeCompare(b.name,'ko'));
+      productSelect.disabled = !sel;
+      productSelect.innerHTML = sel
+        ? '<option value="">-- 제품 선택 --</option>' + list.map(p => `<option value="${p.no}">${p.name}</option>`).join('')
+        : '<option value="">-- 축종을 먼저 선택하세요 --</option>';
+      tbody.innerHTML = '';
+      resultTable.classList.add('hidden');
+    });
+
+    productSelect.addEventListener('change', () => {
+      const no = Number(productSelect.value);
+      tbody.innerHTML = '';
+      if (no) {
+        const p = products.find(x=>x.no===no);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.no}</td><td>${p.name}</td><td>${p.species}</td><td>${p.protein}</td><td>${p.tdn}</td><td>${p.fat}</td><td>${p.ca}</td><td>${p.p}</td><td>${p.cf}</td><td>${p.ash}</td>`;
+        tbody.appendChild(tr);
+        resultTable.classList.remove('hidden');
+      } else {
+        resultTable.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
