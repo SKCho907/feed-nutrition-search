@@ -36,14 +36,14 @@
     /* 차트 캔버스 스타일 */
     #compareChart { max-width: 100%; height: auto; margin-top: 24px; }
     /* 로고 및 경고문 스타일 */
-    #logo { max-width: 200px; display: block; margin: 16px auto; }
+    #logo { max-width: 200px; display: block; margin: 16px auto; cursor: pointer; }
     #warning { color: red; font-weight: bold; text-align: center; margin-bottom: 16px; }
     footer { text-align: center; margin-top: 32px; font-size: 0.9rem; color: #555; }
   </style>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body id="top">
   <!-- 로그인 오버레이 -->
   <div id="loginOverlay">
     <div id="loginBox">
@@ -55,8 +55,8 @@
   </div>
 
   <!-- 상단 로고 및 경고문 -->
-  <img id="logo" src="TS.png" alt="TS사료 로고" />
-  <div id="warning">해당자료는 TS사료 대외비로 외부유출을 엄격히 금지합니다.</div>
+  <a href="#top"><img id="logo" src="TS.png" alt="TS사료 로고" /></a>
+  <div id="warning">해당 자료는 TS사료 대외비로 외부유출을 엄격히 금지합니다.</div>
 
   <h1 style="font-size:1.5rem; text-align: center;">사료 제품 영양성분 검색 및 비교</h1>
   <div class="controls">
@@ -107,7 +107,7 @@
     const passInput = document.getElementById('loginPass');
     const loginBtn = document.getElementById('loginBtn');
 
-    // 제품 데이터
+    // 제품 데이터 - 여기에 직접 52개 배열 삽입해주세요
     const products = [ {No:1,제품명:'IGY대용유',축종:'낙농',조단백질:22,TDN:40000,조지방:10,칼슘:0.6,인:0.9,조섬유:3,조회분:10,후레이크:0,면실:0,루핀:0},
       {No:2,제품명:'더셀렉트밀크',축종:'낙농',조단백질:22,TDN:40000,조지방:20,칼슘:0.4,인:0.9,조섬유:1,조회분:10,후레이크:0,면실:0,루핀:0},
       {No:3,제품명:'더셀렉트카프',축종:'낙농',조단백질:20,TDN:72,조지방:2,칼슘:0.8,인:0.8,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0},
@@ -159,7 +159,8 @@
       {No:49,제품명:'우리임신우',축종:'비육',조단백질:13,TDN:70,조지방:1.5,칼슘:0.7,인:1.3,조섬유:20,조회분:12,후레이크:0,면실:0,루핀:0},
       {No:50,제품명:'스카이완성',축종:'비육',조단백질:11.5,TDN:74,조지방:2,칼슘:0.7,인:1,조섬유:15,조회분:12,후레이크:25,면실:0,루핀:0},
       {No:51,제품명:'헬스원',축종:'낙농',조단백질:20,TDN:75,조지방:2.5,칼슘:0.8,인:1,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0},
-      {No:52,제품명:'헬스핏블루S',축종:'낙농',조단백질:20,TDN:75,조지방:2.5,칼슘:0.8,인:1,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0}];
+      {No:52,제품명:'헬스핏블루S',축종:'낙농',조단백질:20,TDN:75,조지방:2.5,칼슘:0.8,인:1,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0}
+    ];
 
     // 컨트롤 요소
     const speciesSelect = document.getElementById('speciesSelect');
