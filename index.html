@@ -66,12 +66,12 @@
     </label>
     <label>비교 제품1:
       <select id="comp1Select" disabled>
-        <option value="">-- 먼저 축종 선택 --</option>
+        <option value="">-- 제품 선택 --</option>
       </select>
     </label>
     <label>비교 제품2:
       <select id="comp2Select" disabled>
-        <option value="">-- 먼저 축종 선택 --</option>
+        <option value="">-- 제품 선택 --</option>
       </select>
     </label>
   </div>
@@ -93,17 +93,14 @@
     const AUTH_USER = 'ts';
     const AUTH_PASS = 'st';
 
-    // 로그인 오버레이
+    // DOM 요소
     const overlay = document.getElementById('loginOverlay');
     const userInput = document.getElementById('loginUser');
     const passInput = document.getElementById('loginPass');
-    document.getElementById('loginBtn').addEventListener('click', () => {
-      if (userInput.value === AUTH_USER && passInput.value === AUTH_PASS) overlay.style.display = 'none';
-      else { alert('아이디 또는 비밀번호가 잘못되었습니다.'); userInput.value = ''; passInput.value = ''; }
-    });
+    const loginBtn = document.getElementById('loginBtn');
 
-    // 기본 요소
-    const products = [ {No:1,제품명:'IGY대용유',축종:'낙농',조단백질:22,TDN:40000,조지방:10,칼슘:0.6,인:0.9,조섬유:3,조회분:10,후레이크:0,면실:0,루핀:0},
+    // 제품 데이터
+    const products = [  {No:1,제품명:'IGY대용유',축종:'낙농',조단백질:22,TDN:40000,조지방:10,칼슘:0.6,인:0.9,조섬유:3,조회분:10,후레이크:0,면실:0,루핀:0},
       {No:2,제품명:'더셀렉트밀크',축종:'낙농',조단백질:22,TDN:40000,조지방:20,칼슘:0.4,인:0.9,조섬유:1,조회분:10,후레이크:0,면실:0,루핀:0},
       {No:3,제품명:'더셀렉트카프',축종:'낙농',조단백질:20,TDN:72,조지방:2,칼슘:0.8,인:0.8,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0},
       {No:4,제품명:'뉴젠카프',축종:'낙농',조단백질:16,TDN:70,조지방:2,칼슘:0.7,인:1,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0},
@@ -154,8 +151,9 @@
       {No:49,제품명:'우리임신우',축종:'비육',조단백질:13,TDN:70,조지방:1.5,칼슘:0.7,인:1.3,조섬유:20,조회분:12,후레이크:0,면실:0,루핀:0},
       {No:50,제품명:'스카이완성',축종:'비육',조단백질:11.5,TDN:74,조지방:2,칼슘:0.7,인:1,조섬유:15,조회분:12,후레이크:25,면실:0,루핀:0},
       {No:51,제품명:'헬스원',축종:'낙농',조단백질:20,TDN:75,조지방:2.5,칼슘:0.8,인:1,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0},
-      {No:52,제품명:'헬스핏블루S',축종:'낙농',조단백질:20,TDN:75,조지방:2.5,칼슘:0.8,인:1,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0}
-    ];
+      {No:52,제품명:'헬스핏블루S',축종:'낙농',조단백질:20,TDN:75,조지방:2.5,칼슘:0.8,인:1,조섬유:15,조회분:12,후레이크:0,면실:0,루핀:0}];
+
+    // 컨트롤 요소
     const speciesSelect = document.getElementById('speciesSelect');
     const singleSelect = document.getElementById('singleSelect');
     const comp1Select = document.getElementById('comp1Select');
@@ -167,50 +165,69 @@
     const chartCanvas = document.getElementById('compareChart');
     let compareChart = null;
 
-    function populateSelects(list) {
-      const opts = '<option value="">-- 제품 선택 --</option>' +
-        list.map(p => `<option value="${p.No}">${p.제품명}</option>`).join('');
-      singleSelect.innerHTML = opts;
-      comp1Select.innerHTML = opts;
-      comp2Select.innerHTML = opts;
-    }
+    // 로그인 처리
+    loginBtn.addEventListener('click', () => {
+      if (userInput.value === AUTH_USER && passInput.value === AUTH_PASS) {
+        overlay.style.display = 'none';
+        // 비교 드롭다운 항상 활성화 및 전체 제품 목록 채우기
+        comp1Select.disabled = comp2Select.disabled = false;
+        const opts = '<option value="">-- 제품 선택 --</option>' +
+          products.sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
+                  .map(p=>`<option value="${p.No}">${p.제품명}</option>`).join('');
+        comp1Select.innerHTML = opts;
+        comp2Select.innerHTML = opts;
+      } else {
+        alert('아이디 또는 비밀번호가 잘못되었습니다.');
+        userInput.value = '';
+        passInput.value = '';
+      }
+    });
 
+    // 축종 선택 시 단일 드롭다운만 필터링
     speciesSelect.addEventListener('change', () => {
       const sel = speciesSelect.value;
-      const list = products.filter(p => p.축종 === sel).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'));
-      singleSelect.disabled = comp1Select.disabled = comp2Select.disabled = !sel;
-      populateSelects(list);
-      singleBody.innerHTML = '';
-      compareBody.innerHTML = '';
+      if (!sel) {
+        singleSelect.disabled = true;
+        singleSelect.innerHTML = '<option value="">-- 먼저 축종 선택 --</option>';
+      } else {
+        const list = products.filter(p => p.축종 === sel)
+                             .sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'));
+        singleSelect.disabled = false;
+        singleSelect.innerHTML = '<option value="">-- 제품 선택 --</option>' +
+          list.map(p=>`<option value="${p.No}">${p.제품명}</option>`).join('');
+      }
+      // 테이블/차트 초기화
       singleTable.classList.add('hidden');
       compareTable.classList.add('hidden');
       chartCanvas.classList.add('hidden');
       if (compareChart) { compareChart.destroy(); compareChart = null; }
     });
 
+    // 단일 조회
     function renderSingle(no) {
-      const p = products.find(x=>x.No===no);
+      const p = products.find(x => x.No === no);
       if (!p) return;
       singleBody.innerHTML = '';
-      Object.keys(p).filter(k=>!['No','제품명','축종'].includes(k)).forEach(key=>{
+      Object.keys(p).filter(k=>!['No','제품명','축종'].includes(k)).forEach(key => {
         singleBody.insertAdjacentHTML('beforeend', `<tr><td>${key}</td><td>${p[key]}</td></tr>`);
       });
       singleTable.classList.remove('hidden');
       compareTable.classList.add('hidden');
       chartCanvas.classList.add('hidden');
-      if (compareChart) { compareChart.destroy(); compareChart = null; }
     }
 
-    function renderCompare(n1,n2) {
-      const p1=products.find(x=>x.No===n1), p2=products.find(x=>x.No===n2);
-      if(!p1||!p2) return;
-      compareBody.innerHTML='';
-      const labels=[];
-      const data1=[];
-      const data2=[];
-      Object.keys(p1).filter(k=>k!=='No'&&k!=='제품명'&&k!=='축종').forEach(key=>{
-        const v1=p1[key],v2=p2[key];
-        if(typeof v1==='number'&&typeof v2==='number'){
+    // 비교 조회
+    function renderCompare(n1, n2) {
+      const p1 = products.find(x => x.No === n1);
+      const p2 = products.find(x => x.No === n2);
+      if (!p1 || !p2) return;
+      compareBody.innerHTML = '';
+      const labels = [];
+      const data1 = [];
+      const data2 = [];
+      Object.keys(p1).filter(k=>!['No','제품명','축종'].includes(k)).forEach(key => {
+        const v1 = p1[key], v2 = p2[key];
+        if (typeof v1 === 'number' && typeof v2 === 'number') {
           labels.push(key);
           data1.push(v1);
           data2.push(v2);
@@ -222,24 +239,21 @@
       compareTable.classList.remove('hidden');
       // 차트 그리기
       chartCanvas.classList.remove('hidden');
-      if(compareChart) compareChart.destroy();
+      if (compareChart) compareChart.destroy();
       compareChart = new Chart(chartCanvas.getContext('2d'), {
         type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [
-            { label: p1.제품명, data: data1, backgroundColor: 'rgba(54,162,235,0.5)' },
-            { label: p2.제품명, data: data2, backgroundColor: 'rgba(255,99,132,0.5)' }
-          ]
-        },
+        data: { labels, datasets: [
+          { label: p1.제품명, data: data1, backgroundColor: 'rgba(54,162,235,0.5)' },
+          { label: p2.제품명, data: data2, backgroundColor: 'rgba(255,99,132,0.5)' }
+        ] },
         options: { responsive:true, scales:{ y:{ beginAtZero:true } } }
       });
       singleTable.classList.add('hidden');
     }
 
-    singleSelect.addEventListener('change', ()=>renderSingle(Number(singleSelect.value)));
-    comp1Select.addEventListener('change', ()=>renderCompare(Number(comp1Select.value),Number(comp2Select.value)));
-    comp2Select.addEventListener('change', ()=>renderCompare(Number(comp1Select.value),Number(comp2Select.value)));
+    singleSelect.addEventListener('change', () => renderSingle(Number(singleSelect.value)));
+    comp1Select.addEventListener('change', () => renderCompare(Number(comp1Select.value), Number(comp2Select.value)));
+    comp2Select.addEventListener('change', () => renderCompare(Number(comp1Select.value), Number(comp2Select.value)));
   </script>
 </body>
 </html>
