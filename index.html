@@ -1,60 +1,121 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>TS사료 제품 비교</title>
+  <title>TS사료 제품 검색 및 비교</title>
   <style>
     body { font-family:sans-serif; margin:0; padding:16px; }
-    .controls { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
-    .controls label { flex:1 1 140px; }
-    .controls select { width:100%; padding:8px; font-size:1rem; }
+    #logo { max-width:200px; display:block; margin:16px auto; cursor:pointer; }
+    #warning { color:red; font-weight:bold; text-align:center; margin-bottom:16px; }
+    fieldset { border:1px solid #ccc; padding:12px; margin-bottom:16px; }
+    legend { padding:0 8px; font-weight:bold; }
+    .controls { display:flex; flex-wrap:wrap; gap:8px; }
+    .controls label { flex:1 1 120px; }
+    .controls select { width:100%; padding:6px; }
     .table-container { overflow-x:auto; margin-top:24px; }
     table { width:100%; border-collapse:collapse; table-layout:fixed; }
-    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:center; font-size:0.9rem; }
     th { background:#f4f4f4; }
-    #compareChart { width:100%; height:auto; margin-top:24px; }
+    #compareChart { max-width:100%; height:auto; margin-top:24px; }
+    footer { text-align:center; margin-top:32px; font-size:0.9rem; color:#555; }
+    #loginOverlay {
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.75); display:flex;
+      align-items:center; justify-content:center; z-index:9999;
+    }
+    #loginBox {
+      background:#fff; padding:24px; border-radius:8px;
+      width:90%; max-width:320px; box-shadow:0 2px 10px rgba(0,0,0,0.3);
+    }
+    #loginBox h2 { margin-top:0; font-size:1.2rem; }
+    #loginBox input, #loginBox button {
+      width:100%; padding:8px; margin:8px 0; box-sizing:border-box; font-size:1rem;
+    }
+    #loginBox button { cursor:pointer; }
     .hidden { display:none; }
+    @media(max-width:480px){
+      body { padding:8px; }
+      .controls { flex-direction:column; }
+      th,td { padding:6px; font-size:0.8rem; }
+    }
   </style>
+  <!-- 차트용 CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-  <h1 style="text-align:center;">사료 제품 비교</h1>
-
-  <div class="controls">
-    <!-- 비교 제품1용 축종 선택 -->
-    <label>비교 제품 1 축종:
-      <select id="speciesSelect">
-        <option value="">-- 축종 선택 --</option>
-        <option value="낙농">낙농</option>
-        <option value="비육">비육</option>
-        <option value="양돈">양돈</option>
-      </select>
-    </label>
-
-    <!-- 비교 제품1 -->
-    <label>비교 제품 1:
-      <select id="comp1Select" disabled>
-        <option value="">-- 먼저 축종 선택 --</option>
-      </select>
-    </label>
-
-    <!-- 비교 제품2용 축종 선택 (comp1 선택 후 활성화) -->
-    <label>비교 제품 2 축종:
-      <select id="species2Select" disabled>
-        <option value="">-- 비교 1 선택 후 --</option>
-      </select>
-    </label>
-
-    <!-- 비교 제품2 -->
-    <label>비교 제품 2:
-      <select id="comp2Select" disabled>
-        <option value="">-- 먼저 축종 선택 --</option>
-      </select>
-    </label>
+<body id="top">
+  <!-- 로그인 오버레이 -->
+  <div id="loginOverlay">
+    <div id="loginBox">
+      <h2>로그인 필요</h2>
+      <input type="text" id="loginUser" placeholder="이메일 입력"/>
+      <input type="password" id="loginPass" placeholder="비밀번호 입력"/>
+      <button id="loginBtn">로그인</button>
+    </div>
   </div>
 
+  <!-- 로고 + 경고문 -->
+  <a href="#top"><img id="logo" src="TS.png" alt="TS사료 로고"/></a>
+  <div id="warning">해당 자료는 TS사료 대외비로 외부유출을 엄격히 금지합니다.</div>
+
+  <h1 style="text-align:center; font-size:1.5rem;">사료 제품 검색 및 비교</h1>
+
+  <!-- 단일 제품 검색 -->
+  <fieldset>
+    <legend>단일 제품 검색</legend>
+    <div class="controls">
+      <label>축종:
+        <select id="singleSpeciesSelect" disabled>
+          <option value="">-- 축종 선택 --</option>
+          <option value="낙농">낙농</option>
+          <option value="비육">비육</option>
+          <option value="양돈">양돈</option>
+        </select>
+      </label>
+      <label>제품:
+        <select id="singleSelect" disabled>
+          <option value="">-- 먼저 축종 선택 --</option>
+        </select>
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- 제품 비교 -->
+  <fieldset>
+    <legend>제품 비교</legend>
+    <div class="controls">
+      <label>비교 1 축종:
+        <select id="comp1SpeciesSelect" disabled>
+          <option value="">-- 축종 선택 --</option>
+          <option value="낙농">낙농</option>
+          <option value="비육">비육</option>
+          <option value="양돈">양돈</option>
+        </select>
+      </label>
+      <label>비교 1 제품:
+        <select id="comp1Select" disabled>
+          <option value="">-- 먼저 축종 선택 --</option>
+        </select>
+      </label>
+      <label>비교 2 축종:
+        <select id="comp2SpeciesSelect" disabled>
+          <option value="">-- 비교1 선택 후 --</option>
+        </select>
+      </label>
+      <label>비교 2 제품:
+        <select id="comp2Select" disabled>
+          <option value="">-- 먼저 축종 선택 --</option>
+        </select>
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- 결과 테이블 & 차트 -->
   <div class="table-container">
+    <table id="singleTable" class="hidden">
+      <thead><tr><th>항목</th><th>값</th></tr></thead>
+      <tbody></tbody>
+    </table>
     <table id="compareTable" class="hidden">
       <thead>
         <tr>
@@ -69,123 +130,196 @@
     <canvas id="compareChart" class="hidden"></canvas>
   </div>
 
+  <footer>TS사료 M&amp;R UNIT</footer>
+
   <script type="module">
     import products from './products.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp,
+      query, orderBy, limit, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-    const speciesSelect  = document.getElementById('speciesSelect');
-    const comp1Select    = document.getElementById('comp1Select');
-    const species2Select = document.getElementById('species2Select');
-    const comp2Select    = document.getElementById('comp2Select');
-    const compareTable   = document.getElementById('compareTable');
-    const compareBody    = compareTable.querySelector('tbody');
-    const hdr1           = document.getElementById('hdr1');
-    const hdr2           = document.getElementById('hdr2');
-    const chartCanvas    = document.getElementById('compareChart');
-    let compareChart     = null;
+    // Firebase 세팅
+    const firebaseConfig = {
+      apiKey:    "AIzaSyAccx7ZrubSFxTYvZUVEjeSx7H0k4aqXMA",
+      authDomain:"feed-nutrition-search.firebaseapp.com",
+      projectId: "feed-nutrition-search",
+      storageBucket:"feed-nutrition-search.appspot.com",
+      messagingSenderId:"85135072101",
+      appId:     "1:85135072101:web:098e53b857e0304ed71f8c"
+    };
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-    // 드롭다운 옵션 채워주는 헬퍼
-    function populate(selectEl, list) {
-      selectEl.innerHTML =
-        '<option value="">-- 제품 선택 --</option>' +
+    // DOM 레퍼런스
+    const overlay           = document.getElementById('loginOverlay');
+    const userInput         = document.getElementById('loginUser');
+    const passInput         = document.getElementById('loginPass');
+    const loginBtn          = document.getElementById('loginBtn');
+    const singleSpeciesSel  = document.getElementById('singleSpeciesSelect');
+    const singleSel         = document.getElementById('singleSelect');
+    const comp1SpeciesSel   = document.getElementById('comp1SpeciesSelect');
+    const comp1Sel          = document.getElementById('comp1Select');
+    const comp2SpeciesSel   = document.getElementById('comp2SpeciesSelect');
+    const comp2Sel          = document.getElementById('comp2Select');
+    const singleTable       = document.getElementById('singleTable');
+    const singleBody        = singleTable.querySelector('tbody');
+    const compareTable      = document.getElementById('compareTable');
+    const compareBody       = compareTable.querySelector('tbody');
+    const hdr1              = document.getElementById('hdr1');
+    const hdr2              = document.getElementById('hdr2');
+    const chartCanvas       = document.getElementById('compareChart');
+    let compareChart        = null;
+
+    // 로그인 핸들러
+    loginBtn.addEventListener('click', async () => {
+      const email = userInput.value.trim();
+      const pwd   = passInput.value;
+      try {
+        await signInWithEmailAndPassword(auth, email, pwd);
+        await addDoc(collection(db,'loginLogs'), { email, success:true, timestamp:serverTimestamp() });
+        overlay.style.display = 'none';
+        // 로그인 후 드롭다운 활성화
+        [singleSpeciesSel, comp1SpeciesSel].forEach(el => el.disabled = false);
+      } catch(e) {
+        await addDoc(collection(db,'loginLogs'), { email, success:false, error:e.message, timestamp:serverTimestamp() });
+        alert('로그인 실패: '+e.message);
+      }
+    });
+
+    // 최근 7건 로그인 기록 (optional)
+    const logBody = null; // 생략...
+
+    // 헬퍼: 옵션 채우기
+    function populateOptions(sel, list) {
+      sel.innerHTML = '<option value="">-- 제품 선택 --</option>' +
         list.map(p => `<option value="${p.No}">${p.제품명}</option>`).join('');
     }
 
-    // 1) 비교1 축종 선택 → comp1Select 활성화 & 옵션 채우기
-    speciesSelect.addEventListener('change', () => {
-      const sp = speciesSelect.value;
-      if (!sp) {
-        comp1Select.disabled = true;
-        comp1Select.innerHTML = '<option>-- 먼저 축종 선택 --</option>';
-        // comp2 단계 초기화
-        species2Select.disabled = true;
-        comp2Select.disabled    = true;
+    // 단일 검색: 종 선택
+    singleSpeciesSel.addEventListener('change', () => {
+      const s = singleSpeciesSel.value;
+      if (!s) {
+        singleSel.disabled = true;
+        singleSel.innerHTML = '<option>-- 먼저 축종 선택 --</option>';
       } else {
-        const list = products.filter(p => p.축종 === sp)
-                             .sort((a,b) => a.제품명.localeCompare(b.제품명,'ko'));
-        populate(comp1Select, list);
-        comp1Select.disabled = false;
-        // comp2 단계 초기화
-        species2Select.disabled = true;
-        comp2Select.disabled    = true;
-        species2Select.innerHTML = '<option>-- 비교 1 선택 후 --</option>';
-        comp2Select.innerHTML    = '<option>-- 먼저 축종 선택 --</option>';
+        populateOptions(
+          singleSel,
+          products.filter(p => p.축종 === s).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
+        );
+        singleSel.disabled = false;
       }
-      // 테이블·차트 초기화
-      compareTable.classList.add('hidden');
-      chartCanvas.classList.add('hidden');
-      if (compareChart) { compareChart.destroy(); compareChart = null; }
+      singleTable.classList.add('hidden');
     });
 
-    // 2) comp1 선택 → species2Select 활성화
-    comp1Select.addEventListener('change', () => {
-      if (!comp1Select.value) {
-        species2Select.disabled = true;
+    // 단일 검색: 제품 선택 시 렌더
+    singleSel.addEventListener('change', () => {
+      const no = Number(singleSel.value);
+      const p  = products.find(x=>x.No===no);
+      if (!p) return;
+      singleBody.innerHTML = '';
+      Object.keys(p).filter(k=>!['No','제품명','축종'].includes(k))
+        .forEach(key => {
+          singleBody.insertAdjacentHTML('beforeend',
+            `<tr><td>${key}</td><td>${p[key]||''}</td></tr>`
+          );
+        });
+      singleTable.classList.remove('hidden');
+    });
+
+    // 비교1 종 선택
+    comp1SpeciesSel.addEventListener('change', () => {
+      const s1 = comp1SpeciesSel.value;
+      if (!s1) {
+        comp1Sel.disabled = true;
+        comp1Sel.innerHTML = '<option>-- 먼저 축종 선택 --</option>';
+        comp2SpeciesSel.disabled = true;
+        comp2Sel.disabled        = true;
       } else {
-        species2Select.disabled = false;
-        // 두번째 축종 드롭다운은 동일하게 세 축종 중 골라주면 됩니다
-        species2Select.innerHTML = `
+        populateOptions(
+          comp1Sel,
+          products.filter(p=>p.축종===s1).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
+        );
+        comp1Sel.disabled = false;
+        // 비교2 단계 초기화
+        comp2SpeciesSel.disabled = true;
+        comp2Sel.disabled        = true;
+        comp2SpeciesSel.innerHTML= '<option>-- 비교1 선택 후 --</option>';
+        comp2Sel.innerHTML       = '<option>-- 먼저 축종 선택 --</option>';
+      }
+      compareTable.classList.add('hidden');
+      chartCanvas.classList.add('hidden');
+    });
+
+    // 비교1 제품 선택 → 비교2 축종 활성화
+    comp1Sel.addEventListener('change', () => {
+      if (comp1Sel.value) {
+        comp2SpeciesSel.disabled = false;
+        comp2SpeciesSel.innerHTML = `
           <option value="">-- 축종 선택 --</option>
           <option value="낙농">낙농</option>
           <option value="비육">비육</option>
-          <option value="양돈">양돈</option>
-        `;
-        comp2Select.disabled = true;
-        comp2Select.innerHTML = '<option>-- 비교 2 축종 후 --</option>';
-      }
-      // 초기화
-      compareTable.classList.add('hidden');
-      chartCanvas.classList.add('hidden');
-      if (compareChart) { compareChart.destroy(); compareChart = null; }
-    });
-
-    // 3) 비교2 축종 선택 → comp2Select 활성화 & 옵션 채우기
-    species2Select.addEventListener('change', () => {
-      const sp2 = species2Select.value;
-      if (!sp2) {
-        comp2Select.disabled = true;
-        comp2Select.innerHTML = '<option>-- 먼저 축종 선택 --</option>';
+          <option value="양돈">양돈</option>`;
       } else {
-        const list2 = products.filter(p => p.축종 === sp2)
-                              .sort((a,b) => a.제품명.localeCompare(b.제품명,'ko'));
-        populate(comp2Select, list2);
-        comp2Select.disabled = false;
+        comp2SpeciesSel.disabled = true;
       }
-      // 초기화
       compareTable.classList.add('hidden');
       chartCanvas.classList.add('hidden');
-      if (compareChart) { compareChart.destroy(); compareChart = null; }
     });
 
-    // 비교 테이블 + 차트 렌더러
-    function renderCompare(n1, n2) {
-      const p1 = products.find(x => x.No === n1);
-      const p2 = products.find(x => x.No === n2);
-      if (!p1 || !p2) return;
+    // 비교2 종 선택
+    comp2SpeciesSel.addEventListener('change', () => {
+      const s2 = comp2SpeciesSel.value;
+      if (!s2) {
+        comp2Sel.disabled = true;
+        comp2Sel.innerHTML = '<option>-- 먼저 축종 선택 --</option>';
+      } else {
+        populateOptions(
+          comp2Sel,
+          products.filter(p=>p.축종===s2).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
+        );
+        comp2Sel.disabled = false;
+      }
+      compareTable.classList.add('hidden');
+      chartCanvas.classList.add('hidden');
+    });
+
+    // 비교2 제품 선택 → 테이블+차트 렌더
+    comp2Sel.addEventListener('change', () => {
+      const n1 = Number(comp1Sel.value);
+      const n2 = Number(comp2Sel.value);
+      const p1 = products.find(x=>x.No===n1);
+      const p2 = products.find(x=>x.No===n2);
+      if (!p1||!p2) return;
       hdr1.textContent = p1.제품명;
       hdr2.textContent = p2.제품명;
       compareBody.innerHTML = '';
-      const labels = [], d1 = [], d2 = [];
-      Object.keys(p1).filter(k=>!['No','제품명','축종'].includes(k)).forEach(key => {
-        const v1 = p1[key], v2 = p2[key];
-        compareBody.insertAdjacentHTML('beforeend',
-          `<tr>
-             <td>${key}</td>
-             <td>${v1!==undefined?v1:''}</td>
-             <td>${v2!==undefined?v2:''}</td>
-             <td>${(typeof v1==='number'&&typeof v2==='number')?
-               (v1-v2).toFixed(2):''}</td>
-           </tr>`
-        );
-        if (typeof v1==='number'&&typeof v2==='number') {
-          labels.push(key);
-          d1.push(v1);
-          d2.push(v2);
-        }
-      });
+      const labels=[],d1=[],d2=[];
+      Object.keys(p1).filter(k=>!['No','제품명','축종'].includes(k))
+        .forEach(key=>{
+          const v1=p1[key], v2=p2[key];
+          compareBody.insertAdjacentHTML('beforeend',
+            `<tr>
+               <td>${key}</td>
+               <td>${v1||''}</td>
+               <td>${v2||''}</td>
+               <td>${(typeof v1==='number'&&typeof v2==='number')?
+                 (v1-v2).toFixed(2):''}</td>
+             </tr>`
+          );
+          if (typeof v1==='number'&&typeof v2==='number') {
+            labels.push(key);
+            d1.push(v1);
+            d2.push(v2);
+          }
+        });
       compareTable.classList.remove('hidden');
       chartCanvas.classList.remove('hidden');
       if (compareChart) compareChart.destroy();
-      compareChart = new Chart(chartCanvas.getContext('2d'), {
+      compareChart = new Chart(chartCanvas.getContext('2d'),{
         type:'bar',
         data:{ labels, datasets:[
           { label:p1.제품명, data:d1 },
@@ -193,15 +327,7 @@
         ]},
         options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
       });
-    }
-
-    // 최종 바인딩
-    comp2Select.addEventListener('change', () =>
-      renderCompare(
-        Number(comp1Select.value),
-        Number(comp2Select.value)
-      )
-    );
+    });
   </script>
 </body>
 </html>
