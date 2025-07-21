@@ -11,7 +11,7 @@
     fieldset { border:1px solid #ccc; padding:12px; margin-bottom:16px; }
     legend { padding:0 8px; font-weight:bold; }
     .controls { display:flex; flex-wrap:wrap; gap:8px; }
-    .controls label { flex:1 1 120px; }
+    .controls label { flex:1 1 140px; }
     .controls select { width:100%; padding:6px; }
     .table-container { overflow-x:auto; margin-top:24px; }
     table { width:100%; border-collapse:collapse; table-layout:fixed; }
@@ -40,10 +40,11 @@
       th,td { padding:6px; font-size:0.8rem; }
     }
   </style>
-  <!-- 차트용 CDN -->
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body id="top">
+
   <!-- 로그인 오버레이 -->
   <div id="loginOverlay">
     <div id="loginBox">
@@ -141,7 +142,7 @@
       query, orderBy, limit, onSnapshot
     } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
-    // Firebase 세팅
+    // Firebase 초기화 (자신의 설정으로 교체)
     const firebaseConfig = {
       apiKey:    "AIzaSyAccx7ZrubSFxTYvZUVEjeSx7H0k4aqXMA",
       authDomain:"feed-nutrition-search.firebaseapp.com",
@@ -155,43 +156,43 @@
     const db   = getFirestore(app);
 
     // DOM 레퍼런스
-    const overlay           = document.getElementById('loginOverlay');
-    const userInput         = document.getElementById('loginUser');
-    const passInput         = document.getElementById('loginPass');
-    const loginBtn          = document.getElementById('loginBtn');
-    const singleSpeciesSel  = document.getElementById('singleSpeciesSelect');
-    const singleSel         = document.getElementById('singleSelect');
-    const comp1SpeciesSel   = document.getElementById('comp1SpeciesSelect');
-    const comp1Sel          = document.getElementById('comp1Select');
-    const comp2SpeciesSel   = document.getElementById('comp2SpeciesSelect');
-    const comp2Sel          = document.getElementById('comp2Select');
-    const singleTable       = document.getElementById('singleTable');
-    const singleBody        = singleTable.querySelector('tbody');
-    const compareTable      = document.getElementById('compareTable');
-    const compareBody       = compareTable.querySelector('tbody');
-    const hdr1              = document.getElementById('hdr1');
-    const hdr2              = document.getElementById('hdr2');
-    const chartCanvas       = document.getElementById('compareChart');
-    let compareChart        = null;
+    const overlay            = document.getElementById('loginOverlay');
+    const userInput          = document.getElementById('loginUser');
+    const passInput          = document.getElementById('loginPass');
+    const loginBtn           = document.getElementById('loginBtn');
+    const singleSpeciesSel   = document.getElementById('singleSpeciesSelect');
+    const singleSel          = document.getElementById('singleSelect');
+    const comp1SpeciesSel    = document.getElementById('comp1SpeciesSelect');
+    const comp1Sel           = document.getElementById('comp1Select');
+    const comp2SpeciesSel    = document.getElementById('comp2SpeciesSelect');
+    const comp2Sel           = document.getElementById('comp2Select');
+    const singleTable        = document.getElementById('singleTable');
+    const singleBody         = singleTable.querySelector('tbody');
+    const compareTable       = document.getElementById('compareTable');
+    const compareBody        = compareTable.querySelector('tbody');
+    const hdr1               = document.getElementById('hdr1');
+    const hdr2               = document.getElementById('hdr2');
+    const chartCanvas        = document.getElementById('compareChart');
+    let compareChart         = null;
 
-    // 로그인 핸들러
+    // 로그인 처리
     loginBtn.addEventListener('click', async () => {
       const email = userInput.value.trim();
       const pwd   = passInput.value;
+      console.log('[Auth] 시도:', email);
       try {
-        await signInWithEmailAndPassword(auth, email, pwd);
+        const cred = await signInWithEmailAndPassword(auth, email, pwd);
+        console.log('[Auth] 성공:', cred.user.email);
         await addDoc(collection(db,'loginLogs'), { email, success:true, timestamp:serverTimestamp() });
         overlay.style.display = 'none';
-        // 로그인 후 드롭다운 활성화
-        [singleSpeciesSel, comp1SpeciesSel].forEach(el => el.disabled = false);
+        singleSpeciesSel.disabled = false;
+        comp1SpeciesSel.disabled  = false;
       } catch(e) {
+        console.error('[Auth] 실패:', e.code, e.message);
         await addDoc(collection(db,'loginLogs'), { email, success:false, error:e.message, timestamp:serverTimestamp() });
-        alert('로그인 실패: '+e.message);
+        alert('로그인 실패: ' + e.message);
       }
     });
-
-    // 최근 7건 로그인 기록 (optional)
-    const logBody = null; // 생략...
 
     // 헬퍼: 옵션 채우기
     function populateOptions(sel, list) {
@@ -199,23 +200,23 @@
         list.map(p => `<option value="${p.No}">${p.제품명}</option>`).join('');
     }
 
-    // 단일 검색: 종 선택
+    // 단일 검색: 축종 선택
     singleSpeciesSel.addEventListener('change', () => {
-      const s = singleSpeciesSel.value;
-      if (!s) {
+      const sp = singleSpeciesSel.value;
+      if (!sp) {
         singleSel.disabled = true;
         singleSel.innerHTML = '<option>-- 먼저 축종 선택 --</option>';
       } else {
         populateOptions(
           singleSel,
-          products.filter(p => p.축종 === s).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
+          products.filter(p=>p.축종===sp).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
         );
         singleSel.disabled = false;
       }
       singleTable.classList.add('hidden');
     });
 
-    // 단일 검색: 제품 선택 시 렌더
+    // 단일 검색: 제품 선택
     singleSel.addEventListener('change', () => {
       const no = Number(singleSel.value);
       const p  = products.find(x=>x.No===no);
@@ -230,10 +231,10 @@
       singleTable.classList.remove('hidden');
     });
 
-    // 비교1 종 선택
+    // 비교1 축종 선택
     comp1SpeciesSel.addEventListener('change', () => {
-      const s1 = comp1SpeciesSel.value;
-      if (!s1) {
+      const sp1 = comp1SpeciesSel.value;
+      if (!sp1) {
         comp1Sel.disabled = true;
         comp1Sel.innerHTML = '<option>-- 먼저 축종 선택 --</option>';
         comp2SpeciesSel.disabled = true;
@@ -241,14 +242,13 @@
       } else {
         populateOptions(
           comp1Sel,
-          products.filter(p=>p.축종===s1).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
+          products.filter(p=>p.축종===sp1).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
         );
         comp1Sel.disabled = false;
-        // 비교2 단계 초기화
         comp2SpeciesSel.disabled = true;
         comp2Sel.disabled        = true;
-        comp2SpeciesSel.innerHTML= '<option>-- 비교1 선택 후 --</option>';
-        comp2Sel.innerHTML       = '<option>-- 먼저 축종 선택 --</option>';
+        comp2SpeciesSel.innerHTML = '<option>-- 비교1 선택 후 --</option>';
+        comp2Sel.innerHTML        = '<option>-- 먼저 축종 선택 --</option>';
       }
       compareTable.classList.add('hidden');
       chartCanvas.classList.add('hidden');
@@ -270,16 +270,16 @@
       chartCanvas.classList.add('hidden');
     });
 
-    // 비교2 종 선택
+    // 비교2 축종 선택
     comp2SpeciesSel.addEventListener('change', () => {
-      const s2 = comp2SpeciesSel.value;
-      if (!s2) {
+      const sp2 = comp2SpeciesSel.value;
+      if (!sp2) {
         comp2Sel.disabled = true;
         comp2Sel.innerHTML = '<option>-- 먼저 축종 선택 --</option>';
       } else {
         populateOptions(
           comp2Sel,
-          products.filter(p=>p.축종===s2).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
+          products.filter(p=>p.축종===sp2).sort((a,b)=>a.제품명.localeCompare(b.제품명,'ko'))
         );
         comp2Sel.disabled = false;
       }
@@ -287,17 +287,15 @@
       chartCanvas.classList.add('hidden');
     });
 
-    // 비교2 제품 선택 → 테이블+차트 렌더
+    // 비교2 제품 선택 → 렌더링
     comp2Sel.addEventListener('change', () => {
-      const n1 = Number(comp1Sel.value);
-      const n2 = Number(comp2Sel.value);
-      const p1 = products.find(x=>x.No===n1);
-      const p2 = products.find(x=>x.No===n2);
+      const n1 = Number(comp1Sel.value), n2 = Number(comp2Sel.value);
+      const p1 = products.find(x=>x.No===n1), p2 = products.find(x=>x.No===n2);
       if (!p1||!p2) return;
       hdr1.textContent = p1.제품명;
       hdr2.textContent = p2.제품명;
       compareBody.innerHTML = '';
-      const labels=[],d1=[],d2=[];
+      const labels = [], d1 = [], d2 = [];
       Object.keys(p1).filter(k=>!['No','제품명','축종'].includes(k))
         .forEach(key=>{
           const v1=p1[key], v2=p2[key];
